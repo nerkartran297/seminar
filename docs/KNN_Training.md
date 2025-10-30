@@ -423,3 +423,42 @@ Recommended usage:
 
 - We rely on scikit-learn’s default `algorithm='auto'`. For small, ~11-dim data, it often uses brute force.
 - You can inspect used method via `best.named_steps['knn']._fit_method` after training.
+
+### 8b) (VN) Tóm tắt nhanh khi thuyết trình
+
+- “KNN dùng nguyên tắc gần thì giống: dự đoán dựa vào k láng giềng gần nhất. Nếu dùng `weights=distance`, điểm gần hơn được trọng số lớn hơn.”
+- “Chuẩn hoá bằng StandardScaler để khoảng cách có ý nghĩa, tránh đặc trưng lớn lấn át.”
+- “Dùng GridSearchCV chọn tham số (k, weights, p) qua CV; cuối cùng đánh giá trên test.”
+- “Classification xem Accuracy, Precision/Recall/F1, Confusion; Regression xem RMSE/MAE/R².”
+- “k nhỏ nhạy/overfit; k lớn mượt/underfit. p=2 Euclidean, p=1 Manhattan.”
+
+### 9) (VN) Chuẩn hoá StandardScaler, mean và std là gì?
+
+- StandardScaler đưa từng cột về mean=0, std=1.
+- Công thức chuẩn hoá (dùng thống kê của tập train): \( x' = \frac{x - \text{mean}_{train}}{\text{std}_{train}} \)
+- Định nghĩa:
+  - mean (trung bình): \( \text{mean} = \frac{1}{n}\sum\_{i=1}^n x_i \)
+  - std (độ lệch chuẩn): \( \text{std} = \sqrt{\frac{1}{n}\sum\_{i=1}^{n} (x_i - \text{mean})^2} \)
+- Lý do: KNN đo khoảng cách; không scale thì cột có biên độ lớn sẽ chi phối khoảng cách.
+- Trong repo, scaler đã nằm trong Pipeline nên tự fit/transform đúng quy trình.
+
+### 10) (VN) Hàm nào dùng cho tác vụ nào? Trả kết quả gì?
+
+- `load_winequality_red(data_dir) -> DataFrame`: đọc CSV (hoặc tự tải), trả dữ liệu 12 cột (11 feature + `quality`).
+- `make_quality_labels(quality) -> Series(category)`: ánh xạ `quality` số thành 3 lớp `poor/average/good` (dùng cho classification).
+- `build_knn_classifier(...) -> Pipeline`: Pipeline `StandardScaler + KNeighborsClassifier`; sau khi `.fit`, dùng `.predict`, `.predict_proba`.
+- `build_knn_regressor(...) -> Pipeline`: Pipeline `StandardScaler + KNeighborsRegressor`; sau khi `.fit`, dùng `.predict` (trả số thực).
+- `parse_args() -> argparse.Namespace`: đọc tham số CLI: `--mode`, `--neighbors`, `--cv`, `--test_size`, `--random_state`, `--save_model`, `--no_explain`.
+- `_train_classification(df, args) -> None`: chia tập; GridSearchCV theo lưới k/weights/p (scoring=accuracy); in `best_params_`, `best_score_`, Accuracy/Report/Confusion; lưu model nếu yêu cầu.
+- `_train_regression(df, args) -> None`: chia tập; GridSearchCV (scoring=neg*root_mean_squared_error); in `best_params*`, `best*score*`, RMSE/MAE/R²; lưu model nếu yêu cầu.
+
+### 11) (VN) Luồng chạy CLI và output
+
+- Classification
+
+  - Lệnh: `python src/train.py --mode classify`
+  - Output: `Loaded data ...`, `Best params`, `CV best accuracy`, `Test accuracy`, `Classification report`, `Confusion matrix`, kèm đoạn “Giải thích nhanh”.
+
+- Regression
+  - Lệnh: `python src/train.py --mode regress`
+  - Output: `Loaded data ...`, `Best params`, `CV best (neg RMSE)`, `Test RMSE/MAE/R2`, kèm đoạn “Giải thích nhanh”.
